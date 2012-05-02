@@ -5,6 +5,7 @@ module FuzzyMatcher
         level_values = select_level_values(connection, height)
         connection.create_index_table(height)
         index_values(connection, level_values, distance_function)
+        level_values
       end
 
       private
@@ -13,7 +14,7 @@ module FuzzyMatcher
           indexes = []
           height.times do |l|
             query_result = 
-              conn.connection.send(conn.query_method, query_for_select_levels(conn))
+              conn.send_query query_for_select_levels(conn)
             indexes << parse_result(conn.type, query_result)
           end
           indexes
@@ -51,10 +52,3 @@ module FuzzyMatcher
     end
   end
 end
-
-
-# d - ф-я расстояния
-# р - переданный нам шаблон
-# u1 - точка отсчёта 1го уровня
-# u2 - точка отсчёта 2го уровя
-# n - заданное пользователем расстояние

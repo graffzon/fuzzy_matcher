@@ -13,11 +13,8 @@ module FuzzyMatcher
       @connection = make_connection(db_name, db_user, db_password)
     end
 
-    def query_method
-      case @type
-      when 'pg' then :exec
-      when 'mysql' then :query
-      end
+    def send_query(query)
+      connection.send(query_method, query)
     end
 
     def create_index_table(height)
@@ -31,7 +28,7 @@ module FuzzyMatcher
     end
 
     def select_all(columns)
-      connection.send(query_method, "select #{columns.to_s} from #{@table_name}_indexed")
+      send_query "select #{columns.to_s} from #{@table_name}_indexed"
     end
 
     def parse(values, known_key = true, value = 'value')
@@ -56,15 +53,22 @@ module FuzzyMatcher
 
     private
 
+      def query_method
+        case @type
+        when 'pg' then :exec
+        when 'mysql' then :query
+        end
+      end
+
       def calculate_distance(distance_function, level_value, value)
         query_string = "select #{distance_function}('#{level_value}','#{value}')"
-        result = parse(connection.send(query_method, query_string), false, distance_function)
+        result = parse(send_query(query_string), false, distance_function)
         result.is_a?(Array) ? result[0] : result
       end
 
       def update(value, column, dist)
         query_string = "update #{@table_name}_indexed set #{column} = #{dist} where value = '#{value}'"
-        connection.send(query_method, query_string)
+        send_query query_string
       end
 
       def pg_connection(db_name, db_user, db_password)
@@ -122,8 +126,8 @@ module FuzzyMatcher
       end
 
       def drop_and_create(create_table_string)
-        connection.send(query_method, "drop table if exists #{@table_name}_indexed;")
-        connection.send(query_method, create_table_string)
+        send_query "drop table if exists #{@table_name}_indexed;"
+        send_query create_table_string
       end
 
       def pg_parse_values(result, key = "value")
@@ -136,7 +140,7 @@ module FuzzyMatcher
 
       def fill_index_table
         query_string = "insert into #{@table_name}_indexed (id, value) select id, value from #{@table_name}"
-        connection.send(query_method, query_string)
+        send_query query_string
       end
   end
 end
