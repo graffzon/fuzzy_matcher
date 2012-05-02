@@ -2,7 +2,9 @@ module FuzzyMatcher
   class Indexer
     class << self
       def index!(connection, distance_function, height)
-        select_level_values(connection, height)
+        level_values = select_level_values(connection, height)
+        connection.create_index_table(height)
+        index_values(connection, level_values, distance_function)
       end
 
       private
@@ -27,7 +29,7 @@ module FuzzyMatcher
         end
 
         def query_for_select_levels(connection)
-          "select value from library order by #{rand_func(connection.type)} limit 1"
+          "select value from #{connection.table_name} order by #{rand_func(connection.type)} limit 1"
         end
 
         def parse_result(type, result)
@@ -39,6 +41,12 @@ module FuzzyMatcher
           when "mysql"
             result.first["value"]
           end
+        end
+
+        def index_values(connection, level_values, distance_function)
+          unparsed_result = connection.select_all(:value)
+          values = connection.parse(unparsed_result)
+          connection.build_fqa(level_values, values, distance_function)
         end
     end
   end
