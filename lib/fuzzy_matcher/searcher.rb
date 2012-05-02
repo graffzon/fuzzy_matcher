@@ -10,9 +10,9 @@ module FuzzyMatcher
       private
         def condition_string(level_values, distance_function, accuracy, aim)
           conditions = []
-          level_values.each do |lv|
+          level_values.each_with_index do |lv,i|
             conditions << 
-              "abs(#{distance_function}('#{lv}','#{aim}') - #{distance_function}(value, '#{aim}'))<#{accuracy}"
+              "abs(#{distance_function}('#{lv}','#{aim}') - u#{i})<#{accuracy}"
           end
           conditions.join(" and ")
         end
