@@ -17,6 +17,11 @@ module FuzzyMatcher
       connection.send(query_method, query)
     end
 
+    def send_find_query(conditions)
+      query_string = "select * from #{@table_name}_indexed where #{conditions}"
+      parse(send_query "#{query_string}")
+    end
+
     def create_index_table(height)
       case @type
       when 'pg'
@@ -51,6 +56,12 @@ module FuzzyMatcher
       end
     end
 
+      def calculate_distance(distance_function, level_value, value)
+        query_string = "select #{distance_function}('#{level_value}','#{value}')"
+        result = parse(send_query(query_string), false, distance_function)
+        result.is_a?(Array) ? result[0] : result
+      end
+
     private
 
       def query_method
@@ -58,12 +69,6 @@ module FuzzyMatcher
         when 'pg' then :exec
         when 'mysql' then :query
         end
-      end
-
-      def calculate_distance(distance_function, level_value, value)
-        query_string = "select #{distance_function}('#{level_value}','#{value}')"
-        result = parse(send_query(query_string), false, distance_function)
-        result.is_a?(Array) ? result[0] : result
       end
 
       def update(value, column, dist)
